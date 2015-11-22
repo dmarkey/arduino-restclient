@@ -1,41 +1,22 @@
 #include "RestClient.h"
 
-#ifdef HTTP_DEBUG
-#define HTTP_DEBUG_PRINT(string) (Serial.print(string))
-#endif
+#define HTTP_DEBUG_PRINT(string) // (Serial.print(string))
 
-#ifndef HTTP_DEBUG
-#define HTTP_DEBUG_PRINT(string)
-#endif
 
 RestClient::RestClient(const char* _host){
   host = _host;
   port = 80;
   num_headers = 0;
-  contentType = "x-www-form-urlencoded";	// default
+  contentType = "application/x-www-form-urlencoded";	// default
 }
 
 RestClient::RestClient(const char* _host, int _port){
   host = _host;
   port = _port;
   num_headers = 0;
-  contentType = "x-www-form-urlencoded";	// default
+  contentType = "application/x-www-form-urlencoded";	// default
 }
 
-void RestClient::dhcp(){
-  byte mac[] = { 0xDE, 0xAD, 0xBE, 0xEF, 0xFE, 0xED };
-  if (begin(mac) == 0) {
-    Serial.println("Failed to configure Ethernet using DHCP");
-  }
-  //give it time to initialize
-  delay(1000);
-}
-
-int RestClient::begin(byte mac[]){
-  return Ethernet.begin(mac);
-  //give it time to initialize
-  delay(1000);
-}
 
 // GET path
 int RestClient::get(const char* path){
@@ -50,6 +31,10 @@ int RestClient::get(const char* path, String* response){
 // POST path and body
 int RestClient::post(const char* path, const char* body){
   return request("POST", path, body, NULL);
+}
+
+void RestClient::setClient(Client* _client){
+    client = _client;
 }
 
 // POST path and body with response
@@ -89,7 +74,7 @@ int RestClient::del(const char* path, const char* body, String* response){
 
 void RestClient::write(const char* string){
   HTTP_DEBUG_PRINT(string);
-  client.print(string);
+  client->print(string);
 }
 
 void RestClient::setHeader(const char* header){
@@ -108,7 +93,7 @@ int RestClient::request(const char* method, const char* path,
 
   HTTP_DEBUG_PRINT("HTTP: connect\n");
 
-  if(client.connect(host, port)){
+  if(client->connect(host, port)){
     HTTP_DEBUG_PRINT("HTTP: connected\n");
     HTTP_DEBUG_PRINT("REQUEST: \n");
     // Make a HTTP request line:
@@ -153,7 +138,7 @@ int RestClient::request(const char* method, const char* path,
     //cleanup
     HTTP_DEBUG_PRINT("HTTP: stop client\n");
     num_headers = 0;
-    client.stop();
+    client->stop();
     delay(50);
     HTTP_DEBUG_PRINT("HTTP: client stopped\n");
 
@@ -182,13 +167,13 @@ int RestClient::readResponse(String* response) {
   }
 
   HTTP_DEBUG_PRINT("HTTP: RESPONSE: \n");
-  while (client.connected()) {
+  while (client->connected()) {
     HTTP_DEBUG_PRINT(".");
 
-    if (client.available()) {
+    if (client->available()) {
       HTTP_DEBUG_PRINT(",");
 
-      char c = client.read();
+      char c = client->read();
       HTTP_DEBUG_PRINT(c);
 
       if(c == ' ' && !inStatus){
